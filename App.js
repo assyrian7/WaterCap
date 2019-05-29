@@ -8,9 +8,9 @@
 
 import React, {Component} from 'react';
 import {Dimensions} from 'react-native';
-import {Platform, StyleSheet, Text, View, Image, Animated} from 'react-native';
+import {Platform, StyleSheet, Text, View, Image, Animated, TouchableHighlight} from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
-import Canvas from 'react-native-canvas';
+import Wave from 'react-native-waveview';
 
 
 const instructions = Platform.select({
@@ -32,7 +32,7 @@ export default class App extends Component<Props> {
       this.scanAndConnect()
     }
     */
-    this.scaleValue = Animated.value(0);
+    //this.scaleValue = Animated.value(0);
     this.dwidth = Dimensions.get('screen').width
     this.dheight = Dimensions.get('screen').height
     console.log(this.dwidth)
@@ -185,8 +185,23 @@ export default class App extends Component<Props> {
       </View>
       */
       //<Canvas ref={this.handleCanvas} /*containerViewStyle={{width: '70%', height: '70%'}}*//>
+      /*
       <View style={styles.cup}>
         <Image style={styles.water} />
+      </View>
+      */
+      <View style={styles.cup}>
+        <Wave
+            ref={ref=>this._waveRect = ref}
+            style={styles.wave}
+            H={200}
+            waveParams={[
+                {A: 10, T: 180, fill: '#1aa7ff'},
+                //{A: 10, T: 180, fill: '#1aa7ff'},
+                //{A: 20, T: 100, fill: '#1aa7ff'},
+            ]}
+            animated={true}
+        />
       </View>
     );
   }
@@ -221,8 +236,10 @@ const styles = StyleSheet.create({
     width: 200,
     height: 300,
     //borderTopWidth: 0,
-    borderColor: '#000000',
-    borderWidth: 4,
+    borderColor: '#d6d7da',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    borderWidth: 6,
   },
   water: {
     backgroundColor: '#0000FF',
@@ -232,4 +249,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '50%',
   },
+  wave: {
+      width: '100%',
+      height: '100%',
+      //borderColor: '#d6d7da',
+      borderBottomLeftRadius: 16,
+      borderBottomRightRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: 'transparent',
+  },
+  waveBall: {
+      width: 100,
+      aspectRatio: 1,
+      borderRadius: 50,
+      overflow: 'hidden',
+  },
 });
+
