@@ -23,74 +23,23 @@ const instructions = Platform.select({
 type Props = {};
 export default class App extends Component<Props> {
   componentWillMount() {
-    /*
-    if (Platform.OS === 'ios') {
-      this.manager.onStateChange((state) => {
-        if (state === 'PoweredOn') this.scanAndConnect()
-      })
-    } else {
-      this.scanAndConnect()
-    }
-    */
-    //this.scaleValue = Animated.value(0);
-    this.dwidth = Dimensions.get('screen').width
-    this.dheight = Dimensions.get('screen').height
-    console.log(this.dwidth)
-    console.log(this.dheight)
-    /*
-    this.handleCanvas = (canvas) => {
-      canvas.width = this.dwidth;
-      canvas.height = this.dheight * 0.8;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = "#8ED6FF"
-      ctx.fillRect(this.dwidth * 0.2, this.dheight * 0.5, this.dwidth * 0.6, this.dheight * 0.25);
-      ctx.strokeRect(this.dwidth * 0.2, this.dheight * 0.3, this.dwidth * 0.6, this.dheight * 0.45)
-      ctx.beginPath()
-      ctx.arc(this.dwidth * 0.2 + 10, this.dheight * 0.5, 10, Math.PI, 0);
-      ctx.fill()
-      ctx.beginPath()
-      ctx.arc(this.dwidth * 0.2 + 25, this.dheight * 0.5, 10, Math.PI, 0);
-      ctx.fill()
-      ctx.beginPath()
-      ctx.arc(this.dwidth * 0.2 + 40, this.dheight * 0.5, 10, Math.PI, 0);
-      ctx.fill()
-      ctx.beginPath()
-      ctx.arc(this.dwidth * 0.2 + 55, this.dheight * 0.5, 10, Math.PI, 0);
-      ctx.fill()
-      ctx.beginPath()
-      ctx.arc(this.dwidth * 0.2 + 70, this.dheight * 0.5, 10, Math.PI, 0);
-      ctx.fill()
-      /*
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 10, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 20, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 30, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 40, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 50, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      ctx.beginPath();
-      ctx.arc(this.dwidth * 0.2 + 60, this.dheight * 0.5 - 10, 30, 0.5 * Math.PI, 0, true)
-      ctx.fill()
-      
-    }
-    */
+    
+    const subscription = this.manager.onStateChange((state) => {
+        if (state === 'PoweredOn') {
+            this.scanAndConnect();
+            subscription.remove();
+        }
+    }, true);
     
   }
   constructor() {
     super()
     this.manager = new BleManager()
     this.state = {info: "", values: {}}
-    this.prefixUUID = "f000aa"
-    this.suffixUUID = "-0451-4000-b000-000000000000"
+    this.serviceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
     this.water = 0
+    this.device = null
+    this.scanned = 0
     this.sensors = {
       0: "Temperature",
       1: "Accelerometer",
@@ -101,26 +50,29 @@ export default class App extends Component<Props> {
     }
   }
   scanAndConnect() {
+    //console.log('Scan ' + this.device)
+    console.log('PreScan')
+    //while(this.device == null){
     this.manager.startDeviceScan(null,
-                                 null, (error, device) => {
-      this.info("Scanning...")
+                                 {allowDuplicates: false}, (error, device) => {
+      console.log("Scanning... ")
       console.log(device)
-
+      this.scanned++;
       if (error) {
         this.error(error.message)
         return
       }
 
       if (device.name === 'Adafruit Bluefruit LE') {
-        this.info("Connecting to TI Sensor")
+        console.log('ID: ' + device.id)
         this.manager.stopDeviceScan()
+        this.device = device;
         device.connect()
           .then((device) => {
             this.info("Discovering services and characteristics")
             console.log(device.discoverAllServicesAndCharacteristics());
             return device.discoverAllServicesAndCharacteristics()
           })
-          /*
           .then((device) => {
             this.info("Setting notifications")
             return this.setupNotifications(device)
@@ -130,20 +82,22 @@ export default class App extends Component<Props> {
           }, (error) => {
             this.error(error.message)
           })
-          */
+          
       }
     });
+    //}
+    console.log('PostScan')
   }
   async setupNotifications(device) {
-    for (const id in this.sensors) {
-      const service = this.serviceUUID(id)
-      const characteristicW = this.writeUUID(id)
-      const characteristicN = this.notifyUUID(id)
-
-      const characteristic = await device.writeCharacteristicWithResponseForService(
-        service, characteristicW, "AQ==" /* 0x01 in hex */
-      )
-
+    //for (const id in this.sensors) {
+      const service = this.serviceUUID
+     //const characteristicW = this.writeUUID(id)
+      //const characteristicN = this.notifyUUID(id)
+      console.log('Before read')
+      const characteristic = await device.readCharacteristicWithResponseForService(
+        service)
+      console.log('After read')
+      /*
       device.monitorCharacteristicForService(service, characteristicN, (error, characteristic) => {
         if (error) {
           this.error(error.message)
@@ -151,7 +105,8 @@ export default class App extends Component<Props> {
         }
         this.updateValue(characteristic.uuid, characteristic.value)
       })
-    }
+      */
+    //}
   }
   serviceUUID(num) {
     return this.prefixUUID + num + "0" + this.suffixUUID
@@ -185,23 +140,25 @@ export default class App extends Component<Props> {
       </View>
       */
       //<Canvas ref={this.handleCanvas} /*containerViewStyle={{width: '70%', height: '70%'}}*//>
-      /*
-      <View style={styles.cup}>
-        <Image style={styles.water} />
-      </View>
-      */
-      <View style={styles.cup}>
-        <Wave
-            ref={ref=>this._waveRect = ref}
-            style={styles.wave}
-            H={200}
-            waveParams={[
-                {A: 10, T: 180, fill: '#1aa7ff'},
-                //{A: 10, T: 180, fill: '#1aa7ff'},
-                //{A: 20, T: 100, fill: '#1aa7ff'},
-            ]}
-            animated={true}
-        />
+     
+      <View style={styles.outer}>
+        <View style={styles.text}>
+          <Text style={styles.rtext}>Water consumed today: 1120mL</Text>
+          <Text style={styles.rtext}>Daily goal: 2000mL</Text>
+        </View>
+        <View style={styles.cup}>
+          <Wave
+              ref={ref=>this._waveRect = ref}
+              style={styles.wave}
+              H={168}
+              waveParams={[
+                  {A: 10, T: 180, fill: '#1aa7ff'},
+                  //{A: 10, T: 180, fill: '#1aa7ff'},
+                  //{A: 20, T: 100, fill: '#1aa7ff'},
+              ]}
+              animated={true}
+          />
+        </View>
       </View>
     );
   }
@@ -213,6 +170,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
+  },
+  text: {
+    top: '10%',
+  },
+  rtext: {
+    textAlign: 'center',
+    margin: 10,
+    fontSize: 20,
+  },
+  outer: {
+    width: '100%',
+    height: '100%',
   },
   welcome: {
     fontSize: 20,
@@ -231,10 +200,10 @@ const styles = StyleSheet.create({
   },
   cup: {
     position: 'absolute',
-    top: 200,
-    left: 85,
-    width: 200,
-    height: 300,
+    top: '40%',
+    left: '25%',
+    width: '50%',
+    height: '50%',
     //borderTopWidth: 0,
     borderColor: '#d6d7da',
     borderBottomLeftRadius: 20,
