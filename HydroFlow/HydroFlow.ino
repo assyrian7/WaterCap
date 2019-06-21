@@ -206,19 +206,24 @@ void loop(void)
     Serial.print("] ");
   }
   */
+  
   NbTopsFan = 0;      //Set NbTops to 0 ready for calculations
  sei();            //Enables interrupts
  delay (1000);      //Wait 1 second
  cli();            //Disable interrupts
- Serial.println(NbTopsFan);
- Calc = (NbTopsFan * 7.5) / 60 * 2; //(Pulse frequency x 60) / 7.5Q, = flow rate 
-
+ //Serial.println(NbTopsFan);
+ NbTopsFan -= 60;
+ Calc = (NbTopsFan * 7.5) / 60; //(Pulse frequency x 60) / 7.5Q, = flow rate 
+ //Serial.println(Calc);
 //in L/hour 
- //if(Calc < 50){
-  totalCalc += Calc;
+ if(Calc > 10 && Calc < 21){
+  totalCalc += Calc * 0.7;
   Serial.print (totalCalc, DEC); //Prints the number calculated above
   Serial.print (" Total Mililiters\n"); //Prints "L/hour" and returns a  new line
   ble.print (totalCalc, DEC); //Prints the number calculated above
-  ble.print (" Total Mililiters\n"); //Prints "L/hour" and returns a  new line
- //}
+  ble.print ("\n"); //Prints "L/hour" and returns a  new line
+ }
+ 
+ //ble.print("Hello\n");
+ //Serial.print("Hello\n");
 }

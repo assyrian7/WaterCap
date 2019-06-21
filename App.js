@@ -11,7 +11,7 @@ import {Dimensions} from 'react-native';
 import {Platform, StyleSheet, Text, View, Image, Animated, TouchableHighlight} from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
 import Wave from 'react-native-waveview';
-
+import {Buffer} from 'buffer';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -37,8 +37,11 @@ export default class App extends Component<Props> {
     this.manager = new BleManager()
     this.state = {info: "", values: {}}
     this.serviceUUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-    this.water = 0
+    this.readUUID    = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+    this.state.water = '0'
     this.device = null
+    this.state.am = 200
+    //this.increment = this.increment.bind(this)
     this.scanned = 0
     this.sensors = {
       0: "Temperature",
@@ -69,16 +72,17 @@ export default class App extends Component<Props> {
         this.device = device;
         device.connect()
           .then((device) => {
-            this.info("Discovering services and characteristics")
-            console.log(device.discoverAllServicesAndCharacteristics());
+            console.log("Discovering services and characteristics")
+            //var services = this.getS(device)
+            console.log(device.discoverAllServicesAndCharacteristics())
             return device.discoverAllServicesAndCharacteristics()
           })
           .then((device) => {
-            this.info("Setting notifications")
+            console.log("Setting notifications")
             return this.setupNotifications(device)
           })
           .then(() => {
-            this.info("Listening...")
+            console.log("Listening...")
           }, (error) => {
             this.error(error.message)
           })
@@ -88,24 +92,40 @@ export default class App extends Component<Props> {
     //}
     console.log('PostScan')
   }
+  async getS(device){
+    console.log("ID2: " + device.id)
+    return await device.services();
+  }
+
   async setupNotifications(device) {
     //for (const id in this.sensors) {
       const service = this.serviceUUID
+      const read = this.readUUID
      //const characteristicW = this.writeUUID(id)
       //const characteristicN = this.notifyUUID(id)
-      console.log('Before read')
-      const characteristic = await device.readCharacteristicWithResponseForService(
-        service)
-      console.log('After read')
       /*
-      device.monitorCharacteristicForService(service, characteristicN, (error, characteristic) => {
+      console.log('Before read')
+      const characteristic = await device.readCharacteristicForService(
+        service, read)
+      console.log(characteristic)
+      console.log('After read')
+      */
+      
+      device.monitorCharacteristicForService(service, read, (error, characteristic) => {
         if (error) {
-          this.error(error.message)
+          console.log('Error: ' + error.message)
           return
         }
-        this.updateValue(characteristic.uuid, characteristic.value)
+        let data = characteristic.value
+        let buf = new Buffer(data, 'base64')
+        let wtrstr = buf.toString('ascii')
+        this.setState({water: wtrstr})
+        let newam = (2000 - parseInt(wtrstr)) * 200 / 2000
+        this.setState({am: newam})
+        console.log(this.state.water)
+        //this.updateValue(characteristic.uuid, characteristic.value)
       })
-      */
+      
     //}
   }
   serviceUUID(num) {
@@ -130,6 +150,11 @@ export default class App extends Component<Props> {
   updateValue(key, value) {
     this.setState({values: {...this.state.values, [key]: value}})
   }
+
+  increment(){
+    this.setState({water: 5});
+  }
+
   render() {
     return (
       /*
@@ -143,7 +168,7 @@ export default class App extends Component<Props> {
      
       <View style={styles.outer}>
         <View style={styles.text}>
-          <Text style={styles.rtext}>Water consumed today: 1120mL</Text>
+          <Text style={styles.rtext}>Consumed today: {this.state.water}mL</Text>
           <Text style={styles.rtext}>Daily goal: 2000mL</Text>
         </View>
         <View style={styles.cup}>

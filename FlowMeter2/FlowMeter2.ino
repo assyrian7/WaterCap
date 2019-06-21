@@ -4,7 +4,7 @@
 // http:/themakersworkbench.com http://thebestcasescenario.com http://seeedstudio.com
 
 volatile int NbTopsFan; //measuring the rising edges of the signal
-int Calc;                               
+double Calc;                               
 int hallsensor = 2;    //The pin location of the sensor
 int totalCalc = 0;
 void rpm ()     //This is the function that the interupt calls 
@@ -30,13 +30,17 @@ void loop ()
  sei();            //Enables interrupts
  delay (1000);      //Wait 1 second
  cli();            //Disable interrupts
- Serial.println(NbTopsFan);
- Calc = (NbTopsFan * 7.5) / 60 * 2; //(Pulse frequency x 60) / 7.5Q, = flow rate 
-
+ //Serial.println(NbTopsFan);
+ NbTopsFan -= 60;
+ Calc = (NbTopsFan * 7.5) / 60; //(Pulse frequency x 60) / 7.5Q, = flow rate 
+ Serial.println(Calc);
 //in L/hour 
- //if(Calc < 50){
+
+ if(Calc > 10 && Calc < 17){
+  //Serial.println(Calc);
   totalCalc += Calc;
   Serial.print (totalCalc, DEC); //Prints the number calculated above
   Serial.print (" Total Mililiters\n"); //Prints "L/hour" and returns a  new line
- //}
+ }
+ 
 }
